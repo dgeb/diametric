@@ -1,0 +1,23 @@
+{
+  "name": "diametric",
+  "version": "0.0.1",
+  "description": "Dependency injection primitives",
+  "author": "Dan Gebhardt <dan@cerebris.com>",
+  "repository": "https://github.com/dgeb/diametric",
+  "license": "MIT",
+  "main": "dist/commonjs/es5/index.js",
+  "module": "dist/modules/es2017/index.js",
+  "types": "dist/types/index.d.ts",
+  "scripts": {
+    "build": "rm -rf dist && BROCCOLI_ENV=dist broccoli build dist",
+    "build:tests": "rm -rf tests && BROCCOLI_ENV=tests broccoli build tests",
+    "preversion": "rm -rf dist && BROCCOLI_ENV=dist broccoli build dist",
+    "test": "testem ci"
+  },
+  "devDependencies": {
+    "@glimmer/build": "^0.6.0",
+    "broccoli": "^1.1.0",
+    "broccoli-cli": "^1.0.0",
+    "testem": "^1.13.0"
+  }
+}
