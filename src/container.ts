@@ -22,32 +22,36 @@ export default class Container<Specifier, T> {
   private _factoryResolver: FactoryResolver<Specifier, T>;
   private _invocableResolver: InvocableResolver<Specifier>;
 
-  constructor(factoryResolver: FactoryResolver<Specifier, T>,
+  constructor(factoryResolver?: FactoryResolver<Specifier, T>,
               invocableResolver?: InvocableResolver<Specifier>) {
 
     this._factoryResolver = factoryResolver;
     this._invocableResolver = invocableResolver;
   }
 
-  lookup(specifier: Specifier): T {
+  lookup(specifier: Specifier, constructorArgs?: any[]): T {
     let factory: Factory<any> = this._factoryResolver.factoryFor(specifier);
 
-    let instance = factory.instance;
+    let instance;
 
-    if (instance === undefined) {
-      let constructorInjections = this._factoryResolver.constructorArgumentsFor(specifier);
-      let constructorArgs = constructorInjections && constructorInjections.map(i => this.evaluateInjection(i));
-
-      instance = factory.create(...constructorArgs);
-
-      let initializers = this._factoryResolver.initializersFor(specifier);
-      if (initializers) {
-        initializers.forEach(initializer => {
-          let initializerInjections = this._factoryResolver.initializerArgumentsFor(specifier, initializer.name);
-          let initializerArgs = initializerInjections && initializerInjections.map(i => this.evaluateInjection(i));
-          initializer.initialize(instance, ...initializerArgs);
-        });
+    if (!constructorArgs) {
+      instance = factory.instance;
+      if (instance !== undefined) {
+        return instance;
       }
+      let constructorInjections = this._factoryResolver.constructorArgumentsFor(specifier);
+      constructorArgs = constructorInjections ? constructorInjections.map(i => this.evaluateInjection(i)) : [];
+    }
+
+    instance = factory.create(...constructorArgs);
+
+    let initializers = this._factoryResolver.initializersFor(specifier);
+    if (initializers) {
+      initializers.forEach(initializer => {
+        let initializerInjections = this._factoryResolver.initializerArgumentsFor(specifier, initializer.name);
+        let initializerArgs = initializerInjections ? initializerInjections.map(i => this.evaluateInjection(i)) : [];
+        initializer.initialize(instance, ...initializerArgs);
+      });
     }
 
     return instance;
@@ -60,26 +64,28 @@ export default class Container<Specifier, T> {
     if (destructors) {
       destructors.forEach(destructor => {
         let destructorInjections = this._factoryResolver.destructorArgumentsFor(specifier, destructor.name);
-        let destructorArgs = destructorInjections && destructorInjections.map(i => this.evaluateInjection(i));
+        let destructorArgs = destructorInjections ? destructorInjections.map(i => this.evaluateInjection(i)) : [];
         destructor.teardown(i, ...destructorArgs);
       });
     }
   }
 
-  invoke(specifier: Specifier): any {
+  invoke(specifier: Specifier, args?: any[]): any {
     let invocable = this._invocableResolver.invocableFor(specifier);
 
-    let result = invocable.result;
-
-    if (result === undefined) {
-      let args = this._invocableResolver.invocableArgumentsFor(specifier) || [];
-      let result = invocable.invoke(...args);
+    if (!args) {
+      let result = invocable.result;
+      if (result !== undefined) {
+        return result;
+      }
+      let injections = this._invocableResolver.invocableArgumentsFor(specifier);
+      args = injections ? injections.map(i => this.evaluateInjection(i)) : [];
     }
 
-    return result;
+    return invocable.invoke(...args);
   }
 
-  private evaluateInjection(injection: Injection<Specifier>): any {
+  evaluateInjection(injection: Injection<Specifier>): any {
     if (typeof injection === 'object') {
       switch (injection.type) {
         case 'static':
@@ -119,23 +125,24 @@ export default class Container<Specifier, T> {
   }
 
   private evaluateCreatableInjection(injection: CreatableInjection<Specifier>): any {
-    return this.lookup(injection.source);
+    return this.lookup(injection.source, injection.constructorArgs);
   }
 
   private evaluatePropertyInjection(injection: PropertyInjection<Specifier>): any {
-    let instance = this.lookup(injection.source);
+    let instance = this.lookup(injection.source, injection.constructorArgs);
     return instance[injection.property];
   }
 
   private evaluateMethodInjection(injection: MethodInjection<Specifier>): any {
-    let instance = this.lookup(injection.source);
+    let instance = this.lookup(injection.source, injection.constructorArgs);
     let method = instance[injection.method];
     let args = injection.args ? injection.args.map(i => this.evaluateInjection(i)) : [];
     return method.apply(instance, args);
   }
 
   private evaluateInvocableInjection(injection: InvocableInjection<Specifier>): any {
-    return this.invoke(injection.source);
+    let args = injection.args ? injection.args.map(i => this.evaluateInjection(i)) : undefined;
+    return this.invoke(injection.source, args);
   }
 
   private evaluateDictionaryInjection(injection: DictionaryInjection<Specifier>): object {

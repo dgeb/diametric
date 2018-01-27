@@ -13,24 +13,28 @@ export interface StaticInjection extends BaseEvaluableInjection {
 export interface CreatableInjection<Specifier> extends BaseEvaluableInjection {
   type: 'creatable';
   source: Specifier;
+  constructorArgs?: Injection<Specifier>[];
 }
 
 export interface PropertyInjection<Specifier> extends BaseEvaluableInjection {
   type: 'property';
   source: Specifier;
   property: string;
+  constructorArgs?: Injection<Specifier>[];
 }
 
 export interface MethodInjection<Specifier> extends BaseEvaluableInjection {
   type: 'method';
   source: Specifier;
   method: string;
-  args: Injection<Specifier>[];
+  constructorArgs?: Injection<Specifier>[];
+  args?: Injection<Specifier>[];
 }
 
 export interface InvocableInjection<Specifier> extends BaseEvaluableInjection {
   type: 'invocable';
   source: Specifier;
+  args?: Injection<Specifier>[];
 }
 
 export interface DictionaryInjection<Specifier> extends BaseEvaluableInjection {
