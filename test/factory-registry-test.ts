@@ -3,7 +3,9 @@ import {
   FactoryRegistry,
   SpecifierResolver,
   Initializer,
-  Destructor
+  Destructor,
+  CreatableInjection,
+  StaticInjection
 } from '../src/index';
 
 const { module, test } = QUnit;
@@ -139,4 +141,139 @@ test('destructors can be registered and resolved with a priority', function(asse
   registry.registerDestructor('*', callDestroy);
   registry.registerDestructor('foo', teardownOwnerNew);
   assert.deepEqual(registry.destructorsFor('foo'), [teardownOwnerNew, callDestroy]);
+});
+
+test('constructor args can be registered, unregistered, and resolved', function(assert) {
+  let specifierResolver = new SimpleSpecifierResolver;
+  let registry = new FactoryRegistry<SimpleSpecifier, Foo>(specifierResolver);
+  let injections = [{
+    type: 'creatable',
+    source: 'bar'
+  } as CreatableInjection<SimpleSpecifier>, {
+    type: 'static',
+    value: '123'
+  } as StaticInjection];
+
+  registry.registerConstructorArguments('foo', injections);
+  assert.strictEqual(registry.constructorArgumentsFor('foo'), injections);
+
+  registry.unregisterConstructorArguments('foo');
+  assert.strictEqual(registry.constructorArgumentsFor('foo'), undefined);
+});
+
+test('constructor args can be registered and resolved with priority', function(assert) {
+  let specifierResolver = new SimpleSpecifierResolver;
+  let registry = new FactoryRegistry<SimpleSpecifier, Foo>(specifierResolver);
+  let injections = [{
+    type: 'creatable',
+    source: 'bar'
+  } as CreatableInjection<SimpleSpecifier>, {
+    type: 'static',
+    value: '123'
+  } as StaticInjection];
+  let injections2 = [{
+    type: 'creatable',
+    source: 'foo'
+  } as CreatableInjection<SimpleSpecifier>, {
+    type: 'static',
+    value: '234'
+  } as StaticInjection];
+
+  registry.registerConstructorArguments('*', injections);
+  assert.strictEqual(registry.constructorArgumentsFor('foo'), injections);
+
+  registry.registerConstructorArguments('foo', injections2);
+  assert.strictEqual(registry.constructorArgumentsFor('foo'), injections2);
+});
+
+test('initializer args can be registered, unregistered, and resolved', function(assert) {
+  let specifierResolver = new SimpleSpecifierResolver;
+  let registry = new FactoryRegistry<SimpleSpecifier, Foo>(specifierResolver);
+  let injections = [{
+    type: 'creatable',
+    source: 'bar'
+  } as CreatableInjection<SimpleSpecifier>, {
+    type: 'static',
+    value: '123'
+  } as StaticInjection];
+
+  registry.registerInitializerArguments('foo', 'initOwner', injections);
+  assert.strictEqual(registry.initializerArgumentsFor('foo', 'initOwner'), injections);
+  registry.unregisterInitializerArguments('foo');
+  assert.strictEqual(registry.initializerArgumentsFor('foo', 'initOwner'), undefined);
+
+  registry.registerInitializerArguments('foo', 'initOwner', injections);
+  assert.strictEqual(registry.initializerArgumentsFor('foo', 'initOwner'), injections);
+  registry.unregisterInitializerArguments('foo', 'initOwner');
+  assert.strictEqual(registry.initializerArgumentsFor('foo', 'initOwner'), undefined);
+});
+
+test('initializer args can be registered and resolved with priority', function(assert) {
+  let specifierResolver = new SimpleSpecifierResolver;
+  let registry = new FactoryRegistry<SimpleSpecifier, Foo>(specifierResolver);
+  let injections = [{
+    type: 'creatable',
+    source: 'bar'
+  } as CreatableInjection<SimpleSpecifier>, {
+    type: 'static',
+    value: '123'
+  } as StaticInjection];
+  let injections2 = [{
+    type: 'creatable',
+    source: 'foo'
+  } as CreatableInjection<SimpleSpecifier>, {
+    type: 'static',
+    value: '234'
+  } as StaticInjection];
+
+  registry.registerInitializerArguments('*', 'initOwner', injections);
+  assert.strictEqual(registry.initializerArgumentsFor('foo', 'initOwner'), injections);
+  registry.registerInitializerArguments('foo', 'initOwner', injections2);
+  assert.strictEqual(registry.initializerArgumentsFor('foo', 'initOwner'), injections2);
+});
+
+test('destructor args can be registered, unregistered, and resolved', function(assert) {
+  let specifierResolver = new SimpleSpecifierResolver;
+  let registry = new FactoryRegistry<SimpleSpecifier, Foo>(specifierResolver);
+  let injections = [{
+    type: 'creatable',
+    source: 'bar'
+  } as CreatableInjection<SimpleSpecifier>, {
+    type: 'static',
+    value: '123'
+  } as StaticInjection];
+
+  registry.registerDestructorArguments('foo', 'teardownFoo', injections);
+  assert.strictEqual(registry.destructorArgumentsFor('foo', 'teardownFoo'), injections);
+  registry.unregisterDestructorArguments('foo');
+  assert.strictEqual(registry.destructorArgumentsFor('foo', 'teardownFoo'), undefined);
+
+  registry.registerDestructorArguments('foo', 'teardownFoo', injections);
+  assert.strictEqual(registry.destructorArgumentsFor('foo', 'teardownFoo'), injections);
+  registry.unregisterDestructorArguments('foo', 'teardownFoo');
+  assert.strictEqual(registry.destructorArgumentsFor('foo', 'teardownFoo'), undefined);
+});
+
+test('destructor args can be registered and resolved with priority', function(assert) {
+  let specifierResolver = new SimpleSpecifierResolver;
+  let registry = new FactoryRegistry<SimpleSpecifier, Foo>(specifierResolver);
+  let injections = [{
+    type: 'creatable',
+    source: 'bar'
+  } as CreatableInjection<SimpleSpecifier>, {
+    type: 'static',
+    value: '123'
+  } as StaticInjection];
+  let injections2 = [{
+    type: 'creatable',
+    source: 'foo'
+  } as CreatableInjection<SimpleSpecifier>, {
+    type: 'static',
+    value: '234'
+  } as StaticInjection];
+
+  registry.registerDestructorArguments('*', 'teardownFoo', injections);
+  assert.strictEqual(registry.destructorArgumentsFor('foo', 'teardownFoo'), injections);
+  registry.registerDestructorArguments('foo', 'teardownFoo', injections2);
+  assert.strictEqual(registry.destructorArgumentsFor('foo', 'teardownFoo'), injections2);
 });
